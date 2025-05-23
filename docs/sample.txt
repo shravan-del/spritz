@@ -1,0 +1,1 @@
+This is a sample document about machine learning. Machine learning is a subset of artificial intelligence that focuses on training computers to learn from data without being explicitly programmed.

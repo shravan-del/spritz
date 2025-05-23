@@ -1,0 +1,15 @@
+Deep Learning is a subset of machine learning based on artificial neural networks. These networks are inspired by the human brain's structure and function.
+
+Key concepts in deep learning:
+1. Neural Networks: Layers of interconnected nodes that process information
+2. Backpropagation: Algorithm for training neural networks
+3. Activation Functions: Functions that determine neuron output
+4. Convolutional Neural Networks (CNN): Specialized for processing grid-like data
+5. Recurrent Neural Networks (RNN): Designed for sequential data processing
+
+Applications of deep learning:
+- Image Recognition: Identifying objects and faces in images
+- Speech Recognition: Converting spoken language to text
+- Language Translation: Translating between different languages
+- Game Playing: Mastering complex games like Go and Chess
+- Drug Discovery: Predicting molecular properties and interactions 

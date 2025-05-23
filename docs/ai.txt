@@ -1,0 +1,15 @@
+Artificial Intelligence (AI) is a broad field of computer science focused on creating intelligent machines that can perform tasks that typically require human intelligence.
+
+Key areas of AI include:
+1. Machine Learning: Systems that can learn from data
+2. Natural Language Processing: Understanding and generating human language
+3. Computer Vision: Understanding and analyzing visual information
+4. Robotics: Physical systems that can interact with the environment
+5. Expert Systems: Programs that emulate decision-making of human experts
+
+AI has numerous applications in:
+- Healthcare: Disease diagnosis and treatment planning
+- Finance: Fraud detection and algorithmic trading
+- Transportation: Self-driving vehicles and traffic optimization
+- Education: Personalized learning and automated grading
+- Entertainment: Game AI and content recommendation 
