@@ -3,30 +3,29 @@ This is the main FastAPI application that powers our academic advising system.
 It uses AI to help students choose courses based on grade data and professor information.
 """
 
-# Import necessary libraries
 import os
-from typing import Dict, Optional  # For type hints
-from fastapi import FastAPI, HTTPException, Request  # Web framework
-from fastapi.middleware.cors import CORSMiddleware  # Allows web browsers to call our API
-from fastapi.responses import JSONResponse  # For sending JSON responses
-from pydantic import BaseModel, Field  # For data validation
-from utils import get_retriever  # Our custom course data handler
-from langchain.chains import RetrievalQA  # For question-answering
-from langchain_huggingface import HuggingFacePipeline  # For using AI models
-from langchain.prompts import PromptTemplate  # For formatting AI prompts
-import logging  # For error tracking
-from dotenv import load_dotenv  # For environment variables
-import torch  # For AI model handling
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline  # AI model tools
-from fastapi.middleware.trustedhost import TrustedHostMiddleware  # Security
-import time  # For rate limiting
-from cachetools import TTLCache, cached  # For caching responses
-import json  # For JSON handling
+from typing import Dict, Optional  
+from fastapi import FastAPI, HTTPException, Request  
+from fastapi.middleware.cors import CORSMiddleware  
+from fastapi.responses import JSONResponse  
+from pydantic import BaseModel, Field 
+from utils import get_retriever  
+from langchain.chains import RetrievalQA 
+from langchain_huggingface import HuggingFacePipeline 
+from langchain.prompts import PromptTemplate 
+import logging 
+from dotenv import load_dotenv 
+import torch 
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline  
+from fastapi.middleware.trustedhost import TrustedHostMiddleware 
+import time
+from cachetools import TTLCache, cached 
+import json
 
 # Load environment settings
 load_dotenv()
 
-# Set up logging to track errors and info
+# set up the logging to start tracking
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
