@@ -2,13 +2,19 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from typing import List, Optional, Dict
+import asyncio
+import aiohttp
 import json
-import os
-from typing import List, Optional
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Academic Advising API",
-    description="An API for providing academic advising using course data",
+    description="An AI-powered academic advising system using MCP for course recommendations",
     version="1.0.0"
 )
 
@@ -23,62 +29,90 @@ app.add_middleware(
 
 class QuestionRequest(BaseModel):
     question: str
+    context: Optional[Dict] = {}
 
-class CourseRecommendation(BaseModel):
+class Course(BaseModel):
     code: str
-    gpa: str
-    professors: List[str]
+    name: str
+    prerequisites: List[str]
     difficulty: str
+    success_rate: float
+    topics: List[str]
 
 class AdvisingResponse(BaseModel):
-    recommended_courses: List[CourseRecommendation]
-    key_points: List[str]
-    summary: str
+    recommended_courses: List[Course]
+    explanation: str
+    next_steps: List[str]
 
-# Sample course data (in production, this would come from a database)
-SAMPLE_COURSES = [
-    {
-        "code": "CS101",
-        "gpa": "3.8",
-        "professors": ["Dr. Smith (4.5)", "Dr. Johnson (4.2)"],
-        "difficulty": "Easy"
-    },
-    {
-        "code": "CS201",
-        "gpa": "3.5",
-        "professors": ["Dr. Williams (4.3)"],
-        "difficulty": "Moderate"
-    },
-    {
-        "code": "CS301",
-        "gpa": "3.2",
-        "professors": ["Dr. Brown (4.0)", "Dr. Davis (4.1)"],
-        "difficulty": "Challenging"
-    }
-]
+async def get_mcp_recommendation(question: str, context: Dict) -> Dict:
+    """Get course recommendations from MCP server."""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                "http://localhost:50051/request",
+                json={
+                    "question": question,
+                    "context": context
+                }
+            ) as response:
+                if response.status != 200:
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail="Error getting recommendations from MCP server"
+                    )
+                return await response.json()
+    except Exception as e:
+        logger.error(f"Error communicating with MCP server: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get recommendations: {str(e)}"
+        )
 
 @app.post("/api/ask")
-async def ask_question(request: QuestionRequest):
+async def ask_question(request: QuestionRequest) -> JSONResponse:
+    """Handle course recommendation requests."""
     try:
-        # For demo purposes, always return some sample recommendations
-        response = {
-            "recommended_courses": SAMPLE_COURSES,
-            "key_points": [
-                "Selected courses with strong student performance history",
-                "Included a mix of difficulty levels",
-                "All recommended professors have good ratings"
-            ],
-            "summary": "These courses provide a balanced academic path with experienced professors and proven student success rates."
-        }
-        return JSONResponse(content=response)
+        # Get recommendations from MCP server
+        mcp_response = await get_mcp_recommendation(
+            request.question,
+            request.context
+        )
+        
+        if mcp_response.get("status") != "success":
+            raise HTTPException(
+                status_code=500,
+                detail=mcp_response.get("error", "Unknown error occurred")
+            )
+            
+        return JSONResponse(content=mcp_response["response"])
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error processing request: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Failed to process request",
+                "detail": str(e)
+            }
+        )
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Check if the API and MCP server are healthy."""
+    try:
+        # Try to connect to MCP server
+        async with aiohttp.ClientSession() as session:
+            async with session.get("http://localhost:50051/health") as response:
+                mcp_health = response.status == 200
+    except:
+        mcp_health = False
 
-# This is for local development
+    return {
+        "status": "healthy" if mcp_health else "degraded",
+        "api_status": "healthy",
+        "mcp_status": "healthy" if mcp_health else "unavailable"
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=3000) 
