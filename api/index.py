@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -6,9 +6,13 @@ from typing import List, Optional, Dict, Union
 import json
 import logging
 from datetime import datetime
+from .middleware import error_handler_middleware
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -16,6 +20,9 @@ app = FastAPI(
     description="AI-powered academic advising system for Virginia Tech students",
     version="1.0.0"
 )
+
+# Add error handling middleware
+app.middleware("http")(error_handler_middleware)
 
 # Configure CORS
 app.add_middleware(

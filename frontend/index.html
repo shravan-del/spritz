@@ -4,28 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Academic Advisor AI</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <style>
-        .chat-container {
-            height: calc(100vh - 200px);
-        }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
         <h1 class="text-3xl font-bold text-center mb-8">Academic Advisor AI</h1>
         
         <div class="bg-white rounded-lg shadow-lg p-6">
-            <div id="chat-messages" class="chat-container overflow-y-auto mb-4">
-                <!-- Messages will be inserted here -->
+            <div id="chat-container" class="mb-6 space-y-4 h-[500px] overflow-y-auto">
+                <!-- Chat messages will appear here -->
             </div>
             
             <div class="flex gap-2">
-                <input type="text" id="question-input" 
-                       class="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                       placeholder="Ask about courses...">
-                <button onclick="askQuestion()" 
-                        class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input 
+                    type="text" 
+                    id="question-input"
+                    class="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ask about courses..."
+                >
+                <button 
+                    onclick="askQuestion()"
+                    class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                     Ask
                 </button>
             </div>
@@ -33,33 +33,35 @@
     </div>
 
     <script>
-        const chatMessages = document.getElementById('chat-messages');
-        const questionInput = document.getElementById('question-input');
-
-        questionInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                askQuestion();
-            }
-        });
+        // Default student info
+        const defaultStudentInfo = {
+            major: "CS",
+            year: "freshman",
+            interests: ["programming", "computer science"],
+            completed_courses: []
+        };
 
         async function askQuestion() {
-            const question = questionInput.value.trim();
+            const input = document.getElementById('question-input');
+            const question = input.value.trim();
+            
             if (!question) return;
-
-            // Add user message
-            addMessage('user', question);
-            questionInput.value = '';
+            
+            // Add user message to chat
+            addMessageToChat('You', question);
+            input.value = '';
 
             try {
-                // Show loading state
-                addMessage('assistant', '...thinking...');
-
                 const response = await fetch('/api/ask', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ question })
+                    body: JSON.stringify({
+                        question: question,
+                        student_info: defaultStudentInfo,
+                        context: {}
+                    })
                 });
 
                 if (!response.ok) {
@@ -68,72 +70,69 @@
 
                 const data = await response.json();
                 
-                // Remove loading message
-                chatMessages.removeChild(chatMessages.lastChild);
+                // Format the response
+                let formattedResponse = formatResponse(data);
                 
-                // Add AI response
-                addMessage('assistant', formatResponse(data));
+                // Add AI response to chat
+                addMessageToChat('AI Advisor', formattedResponse);
+                
             } catch (error) {
                 console.error('Error:', error);
-                // Remove loading message
-                chatMessages.removeChild(chatMessages.lastChild);
-                addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+                addMessageToChat('AI Advisor', 'Sorry, I encountered an error. Please try again.');
             }
         }
 
         function formatResponse(data) {
-            if (typeof data === 'string') return data;
+            let response = '';
             
-            let formattedResponse = '';
+            // Add explanation
+            response += data.explanation + '\n\n';
             
-            if (data.recommended_courses) {
-                formattedResponse += '<strong>Recommended Courses:</strong><br>';
-                data.recommended_courses.forEach(course => {
-                    formattedResponse += `• ${course.code} (GPA: ${course.gpa})<br>`;
-                    if (course.professors && course.professors.length > 0) {
-                        formattedResponse += `  Professors: ${course.professors.join(', ')}<br>`;
-                    }
-                    formattedResponse += `  Difficulty: ${course.difficulty}<br><br>`;
-                });
+            // Add pathway plan if available
+            if (data.pathway_plan) {
+                response += 'Recommended Pathway:\n';
+                for (const [semester, courses] of Object.entries(data.pathway_plan)) {
+                    response += `${semester}: ${courses.join(', ')}\n`;
+                }
+                response += '\n';
             }
-
-            if (data.key_points) {
-                formattedResponse += '<strong>Key Points:</strong><br>';
-                data.key_points.forEach(point => {
-                    formattedResponse += `• ${point}<br>`;
-                });
-                formattedResponse += '<br>';
-            }
-
-            if (data.summary) {
-                formattedResponse += `<strong>Summary:</strong><br>${data.summary}`;
-            }
-
-            return formattedResponse || JSON.stringify(data, null, 2);
+            
+            // Add next steps
+            response += 'Next Steps:\n';
+            data.next_steps.forEach(step => {
+                response += `• ${step}\n`;
+            });
+            
+            return response;
         }
 
-        function addMessage(role, content) {
+        function addMessageToChat(sender, message) {
+            const chatContainer = document.getElementById('chat-container');
             const messageDiv = document.createElement('div');
-            messageDiv.className = `mb-4 p-3 rounded-lg ${
-                role === 'user' 
-                    ? 'bg-blue-100 ml-12' 
-                    : 'bg-gray-100 mr-12'
-            }`;
+            messageDiv.className = `p-4 rounded-lg ${sender === 'You' ? 'bg-blue-100' : 'bg-gray-100'}`;
             
-            const roleLabel = document.createElement('div');
-            roleLabel.className = 'font-bold mb-1';
-            roleLabel.textContent = role === 'user' ? 'You' : 'AI Advisor';
+            const senderSpan = document.createElement('span');
+            senderSpan.className = 'font-bold';
+            senderSpan.textContent = sender;
             
-            const contentDiv = document.createElement('div');
-            contentDiv.innerHTML = content;
+            const messageContent = document.createElement('pre');
+            messageContent.className = 'whitespace-pre-wrap mt-2 font-sans';
+            messageContent.textContent = message;
             
-            messageDiv.appendChild(roleLabel);
-            messageDiv.appendChild(contentDiv);
-            chatMessages.appendChild(messageDiv);
+            messageDiv.appendChild(senderSpan);
+            messageDiv.appendChild(messageContent);
+            chatContainer.appendChild(messageDiv);
             
             // Scroll to bottom
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
+
+        // Handle Enter key
+        document.getElementById('question-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                askQuestion();
+            }
+        });
     </script>
 </body>
 </html> 
