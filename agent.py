@@ -160,13 +160,19 @@ Format your response EXACTLY like this JSON (no other text):
 
 # Create the prompt template
 PROMPT = PromptTemplate(
-    template=template,
+    template="""You are an academic advisor helping students choose courses. Use the following context to answer the question:
+
+Context: {context}
+
+Question: {question}
+
+Answer:""",
     input_variables=["context", "question"]
 )
 
 class Query(BaseModel):
     """Define what a question should look like."""
-    question: str = Field(..., min_length=3, description="The question to be answered")
+    question: str = Field(description="The question to ask about course recommendations")
     temperature: Optional[float] = Field(
         default=0.4,
         ge=0.0,
@@ -297,6 +303,15 @@ async def get_stats() -> JSONResponse:
             "window_seconds": RATE_WINDOW
         }
     })
+
+@app.get("/health")
+async def health_check():
+    """Check if the API is running properly."""
+    return {
+        "status": "healthy",
+        "model_loaded": llm is not None,
+        "retriever_ready": retriever is not None
+    }
 
 @app.get("/")
 async def root():
